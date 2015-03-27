@@ -12,8 +12,7 @@ CREATE TABLE Player(
 
 CREATE TABLE Round(
 					RoundId SERIAL PRIMARY KEY		NOT NULL,
-					RoundName INT 			NOT NULL
-
+					RoundNum INT 			NOT NULL
 );
 
 CREATE TABLE Match(
@@ -35,7 +34,7 @@ Values
 
 
 CREATE TABLE PlayerMatch(
-						OutcomeID INT REFERENCES Outcome,
-						MatchId SERIAL REFERENCES Match,
-						PlayerId SERIAL References Player
+						OutcomeID INT REFERENCES Outcome 	NOT NULL,
+						MatchId SERIAL REFERENCES Match	    NOT NULL,
+						PlayerId SERIAL References Player   NOT NULL
 )

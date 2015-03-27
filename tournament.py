@@ -5,18 +5,22 @@
 
 import psycopg2
 
+DATABASE = "dbname=tournament" # GLOBAL VARIABLE THAT IS NAME OF DATABASE
+
 
 def connect():
     """Connect to the PostgreSQL database.  Returns a database connection. Updated to handle missing DB"""
     try :
-        return(psycopg2.connect("dbname=tournament"))
+        return(psycopg2.connect(DATABASE))
     except:
         print "I am unable to connect to the database"
 
-
 def deleteMatches():
     """Remove all the match records from the database."""
-
+    conn=connect()
+    cursor=conn.cursor()
+    cursor.execute("""DELETE FROM Match""")
+    conn.commit()
 
 def deletePlayers():
     """Remove all the player records from the database."""
@@ -32,8 +36,6 @@ def countPlayers():
     cursor.execute("select count(fullname) from player;")# inserts name into player table
     return(cursor.fetchall()[0][0])
 
-
-
 def registerPlayer(name):
     """Adds a player to the tournament database.
   
@@ -45,8 +47,22 @@ def registerPlayer(name):
     """
     connection=connect() # calls the connect method which returns a db connection
     cursor=connection.cursor()# calls the cursor method from pscopg2
-    cursor.execute("insert into Player(fullname) values('%s');"%(name,))# inserts name into player table
+    cursor.execute("INSERT INTO Player(fullname) VALUES('%s');"%(name,))# inserts name into player table
     connection.commit()
+
+def createRound():
+
+    conn=connect()
+    cursor=conn.cursor()
+    cursor.execute("""SELECT MAX(RoundNum) FROM Round """)
+    roundNum=cursor.fetchall()[0][0]
+    if (roundNum==None):
+        roundNum=1
+    else:
+        roundNum=roundNum+1
+    cursor.execute("""INSERT INTO Round(RoundNum) VALUES(%s); """%(roundNum,))
+    conn.commit()
+    return roundNum
 
 def playerStandings():
     """Returns a list of the players and their win records, sorted by wins.
@@ -98,23 +114,17 @@ def swissPairings():
 
         GROUP BY p.PlayerId, p.fullname
                 """    )
-    if(cursor.fetchall()==[]):
-        simFirstRound()
-    else:
-        print("Houston we have a bigger problem")
+    
 
-def simFirstRound():
-    numPlayers=countPlayers()
-    conn=connect()
-    cursor=conn.cursor()
-    players=cursor.execute("""
-        SELECT PlayerId from Player;
-    """)
-    cursor.execute("""INSERT INTO Round(RoundName) Values(1)""")
-    conn.commit()
-    for i in range(0,numPlayers,2):
-        cursor.execute("""INSERT INTO match
-            """)
+def createMatch(PlayerOne,PlayerTwo, Round):
+    """
+    Used to create a match in the database between two players
+    """
+    conn=conenct()
+    cursor=connn.cursor()
+    cursor.execute("""
+        INSERT into
+        """)
 
 def addPlayers(num_Players):
     for i in range(num_Players):
@@ -122,6 +132,6 @@ def addPlayers(num_Players):
         registerPlayer(name)
 
 def main():
-    simFirstRound()
+    print(createRound())
 
 main()
