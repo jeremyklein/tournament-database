@@ -47,7 +47,8 @@ def registerPlayer(name):
     """
     connection=connect() # calls the connect method which returns a db connection
     cursor=connection.cursor()# calls the cursor method from pscopg2
-    cursor.execute("INSERT INTO Player(fullname) VALUES('%s');"%(name,))# inserts name into player table
+    cmd=("INSERT INTO Player(FullName) VALUES(%s);")
+    cursor.execute(cmd,(name,))# inserts name into player table
     connection.commit()
 
 def createRound():
@@ -60,9 +61,11 @@ def createRound():
         roundNum=1
     else:
         roundNum=roundNum+1
-    cursor.execute("""INSERT INTO Round(RoundNum) VALUES(%s); """%(roundNum,))
+    cursor.execute("""INSERT INTO Round(RoundNum=%s) VALUES(%s); """,(roundNum,))
+    cursor.execute("""SELECT MAX(RoundId) from Round""")
+    roundid=cursor.fetchall()[0][0]
+    
     conn.commit()
-    return roundNum
 
 def playerStandings():
     """Returns a list of the players and their win records, sorted by wins.
@@ -78,6 +81,35 @@ def playerStandings():
         matches: the number of matches the player has played
     """
 
+    standings=[]
+    conn=connect()
+    cursor=conn.cursor()
+    cursor.execute(""" SELECT p.PlayerId, p.fullname, a.wins, count(m.matchid)
+        FROM
+            Player p
+            left join match m on p.PlayerId=m.PlayerId
+            left join 
+                    (SELECT
+                        COUNT(o.outcome) as wins, m.PlayerId
+                        FROM Match m 
+                        JOIN Outcome o
+                            on o.outcomeid=m.outcomeid
+                    WHERE o.outcome='win'
+                    GROUP BY m.PlayerId
+                        ) a
+            on a.PlayerId=p.PlayerId
+
+        GROUP BY p.PlayerId, p.fullname, a.wins, m.matchid
+
+        """)
+    results=cursor.fetchall()
+    for i in range(0, countPlayers()):
+        standings.append((results[i][0],
+            results[i][1],
+            int((results[i][2]) or 0),
+            int(results[i][3]),))
+    print standings
+    return standings    
 
 
 def reportMatch(winner, loser):
@@ -87,8 +119,19 @@ def reportMatch(winner, loser):
       winner:  the id number of the player who won
       loser:  the id number of the player who lost
     """
- 
- 
+    conn=connect()
+    cursor=conn.cursor()
+    cursor.execute("SELECT max(matchid) from match")
+    maxid=(cursor.fetchall()[0][0] or 0)+1
+    cmd=("INSERT INTO Match(Outcomeid,Matchid,Playerid) VALUES(%s,%s,%s)")
+    cursor.execute("SELECT Outcomeid from Outcome where Outcome='win'")
+    winid=cursor.fetchall()[0][0]
+    cursor.execute("SELECT Outcomeid from Outcome where Outcome='loss'")
+    lossid=cursor.fetchall()[0][0]
+    cursor.execute(cmd,(winid,maxid,winner))
+    cursor.execute(cmd,(lossid,maxid,loser))
+    conn.commit()
+
 def swissPairings():
     """Returns a list of pairs of players for the next round of a match.
   
@@ -104,17 +147,22 @@ def swissPairings():
         id2: the second player's unique id
         name2: the second player's name
     """
+    swissPairings=[]
     conn=connect()
     cursor=conn.cursor()
-    cursor.execute("""SELECT p.PlayerId, p.fullname, sum(o.value)
+    cursor.execute(""" SELECT p.PlayerId, p.fullname, sum(o.value)
         FROM
             Player p
-            join playermatch m on p.PlayerId=m.PlayerId
-            join outcome o on o.outcomeid=m.outcomeid
+            left join match m on p.PlayerId=m.PlayerId
+            left join outcome o on o.outcomeid=m.outcomeid
 
         GROUP BY p.PlayerId, p.fullname
-                """    )
-    
+        ORDER BY sum(o.value) 
+        """)
+    results=cursor.fetchall()
+    for i in range(0, countPlayers(),2):
+        swissPairings.append((results[i][0],results[i][1],results[i+1][0],results[i+1][1],))
+    return swissPairings    
 
 def createMatch(PlayerOne,PlayerTwo, Round):
     """
@@ -131,7 +179,4 @@ def addPlayers(num_Players):
         name=raw_input("Enter Player name: ")
         registerPlayer(name)
 
-def main():
-    print(createRound())
 
-main()

@@ -10,15 +10,7 @@ CREATE TABLE Player(
 					FullName VARCHAR										
 );
 
-CREATE TABLE Round(
-					RoundId SERIAL PRIMARY KEY		NOT NULL,
-					RoundNum INT 			NOT NULL
-);
 
-CREATE TABLE Match(
-					MatchId SERIAL PRIMARY KEY		NOT NULL,
-					RoundId	INT REFERENCES Round	NOT NULL
-);
 
 CREATE TABLE Outcome(
 					Outcome varchar(4)				NOT NULL,
@@ -33,8 +25,9 @@ Values
 					('tie',0);
 
 
-CREATE TABLE PlayerMatch(
-						OutcomeID INT REFERENCES Outcome 	NOT NULL,
-						MatchId SERIAL REFERENCES Match	    NOT NULL,
-						PlayerId SERIAL References Player   NOT NULL
+CREATE TABLE Match(
+						OutcomeID INT REFERENCES Outcome,
+						MatchId SERIAL 	    NOT NULL,
+						PlayerId INT References Player   NOT NULL,
+						PRIMARY KEY(MatchID, PlayerId) 
 )
