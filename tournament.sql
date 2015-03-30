@@ -7,6 +7,8 @@
 -- these lines here.
 CREATE DATABASE tournament;
 
+\c tournament;
+
 CREATE TABLE Player(
 					PlayerId SERIAL PRIMARY KEY		NOT NULL,
 					FullName VARCHAR										
